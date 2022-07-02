@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -19,10 +20,15 @@ main function reads host/port from env just for an example, flavor it following 
 
 // Start /** Starts the web server listener on given host and port.
 func Start(host string, port int) {
-	router := mux.NewRouter()
+	r := mux.NewRouter()
+
+	r.HandleFunc("/name/{PARAM}", nameHandler).Methods("GET")
+	r.HandleFunc("/bad", badRouteHandler).Methods("GET")
+	r.HandleFunc("/data", dataHandler).Methods("POST")
+	r.PathPrefix("/").HandlerFunc(defaultHandler)
 
 	log.Println(fmt.Printf("Starting API server on %s:%d\n", host, port))
-	if err := http.ListenAndServe(fmt.Sprintf("%s:%d", host, port), router); err != nil {
+	if err := http.ListenAndServe(fmt.Sprintf("%s:%d", host, port), r); err != nil {
 		log.Fatal(err)
 	}
 }
@@ -35,4 +41,27 @@ func main() {
 		port = 8081
 	}
 	Start(host, port)
+}
+
+func defaultHandler(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusOK)
+}
+
+func dataHandler(w http.ResponseWriter, r *http.Request) {
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		fmt.Fprintf(w, "Error reading body:\n%v", err)
+	}
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprintf(w, "I got message:\n%s", string(body))
+}
+
+func badRouteHandler(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(500)
+}
+
+func nameHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprintf(w, "Hello, %v!", vars["PARAM"])
 }
