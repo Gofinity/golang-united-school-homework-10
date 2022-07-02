@@ -25,6 +25,7 @@ func Start(host string, port int) {
 	r.HandleFunc("/name/{PARAM}", nameHandler).Methods("GET")
 	r.HandleFunc("/bad", badRouteHandler).Methods("GET")
 	r.HandleFunc("/data", dataHandler).Methods("POST")
+	r.HandleFunc("/headers", headersHandler).Methods("POST")
 	r.PathPrefix("/").HandlerFunc(defaultHandler)
 
 	log.Println(fmt.Printf("Starting API server on %s:%d\n", host, port))
@@ -45,6 +46,16 @@ func main() {
 
 func defaultHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
+}
+
+func headersHandler(w http.ResponseWriter, r *http.Request) {
+	header := r.Header
+	a, _ := strconv.Atoi(header["A"][0])
+	b, _ := strconv.Atoi(header["B"][0])
+	sum := strconv.Itoa(a + b)
+
+	w.Header().Set("a+b", sum)
+	w.WriteHeader(200)
 }
 
 func dataHandler(w http.ResponseWriter, r *http.Request) {
